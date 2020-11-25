@@ -2,12 +2,14 @@
 
 #include <stdbool.h>
 
-/*状态机所有状态*/
+/*链路层状态*/
 typedef enum
 {
-    SYS_NORMAL,
-    SYS_OTHER,
-    SYS_FAC,
+    SCAN,
+    READY,
+    ADV,
+    CONN,
+    INIT,
 }SM_STATE;
 
 /*触发事件*/
@@ -17,6 +19,8 @@ typedef enum
     EVENT2,
     EVENT3,
     EVENT4,
+    EVENT5,
+    EVENT6,
 }SM_EVENT;
 
 /*回调*/
@@ -31,31 +35,45 @@ typedef struct
     state_cb cb;
 }SM_TABLE_T;
 
-/*产测状态*/
-void fac_state(void)
+/*就绪态*/
+static void sys_ready(void)
 {
-    printf("===FAC\r\n");
+    printf("READY\r\n");
 }
 
-/*其他状态*/
-void other_state(void)
+/*扫描态*/
+static void scan_state(void)
 {
-    printf("===OTHER\r\n");
+    printf("SCAN\r\n");
 }
 
-/*正常状态*/
-void normal_state(void)
+/*广播态*/
+static void adv_state(void)
 {
-    printf("===NORMAL\r\n");
+    printf("ADV\r\n");
+}
+
+/*连接态*/
+static void conn_state(void)
+{
+    printf("CONN\r\n");
+}
+
+/*发起态*/
+static void init_state(void)
+{
+    printf("INIT\r\n");
 }
 
 /*状态表*/
 SM_TABLE_T state_table[] =
 {
-    {EVENT1,  SYS_NORMAL ,SYS_FAC    ,fac_state    },
-    {EVENT2,  SYS_FAC    ,SYS_OTHER  ,other_state  },
-    {EVENT3,  SYS_OTHER  ,SYS_NORMAL ,normal_state },
-    {EVENT4,  SYS_NORMAL ,SYS_OTHER  ,other_state  },
+    {EVENT1, READY, SCAN, scan_state},
+    {EVENT2, SCAN, READY, sys_ready},
+    {EVENT3, READY, ADV, adv_state},
+    {EVENT4, ADV, CONN, conn_state},
+    {EVENT5, CONN, INIT, init_state},
+    {EVENT6, INIT, READY, sys_ready},
 };
 
 /*状态机*/
@@ -95,9 +113,11 @@ void event_handle(SM_EVENT event, SM_T* sm)
 
 void main(void)
 {
-    SM_T state_machine = {.cur_state = SYS_NORMAL, .table = state_table, .size = (sizeof(state_table) / sizeof(SM_TABLE_T))};
+    SM_T state_machine = {.cur_state = READY, .table = state_table, .size = (sizeof(state_table) / sizeof(SM_TABLE_T))};
 
-    SM_EVENT input_event[] = {EVENT1, EVENT2, EVENT3, EVENT4, EVENT1};
+    printf("Init to READY\r\n");
+
+    SM_EVENT input_event[] = {EVENT1, EVENT2, EVENT3, EVENT4, EVENT5, EVENT6, EVENT2};
 
     for (char i = 0; i < sizeof(input_event) / sizeof(SM_EVENT); i++)
     {

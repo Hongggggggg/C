@@ -74,37 +74,31 @@ typedef struct _Link_List
 
 Observer_Node* func_head_node[TOPIC_MAX] = {NULL};
 
-int topic_subscribe(observer_t observer)
+int topic_subscribe(observer_t* observer)
 {
-    if(observer.topic >= TOPIC_MAX) return -1;
+    if(observer->topic >= TOPIC_MAX || observer->func == NULL || observer == NULL) return -1;
 
-    if(observer.func != NULL)
+    Observer_Node* func_link_tail = func_head_node[observer->topic];
+    if(func_link_tail != NULL)
     {
-        Observer_Node* func_link_tail = func_head_node[observer.topic];
-
-        if(func_link_tail != NULL)
+        while(func_link_tail->next != NULL)
         {
-            while(func_link_tail->next != NULL)
-            {
-                func_link_tail = func_link_tail->next;
-            }
+            func_link_tail = func_link_tail->next;
         }
+    }
 
-        Observer_Node* observer_node = (Observer_Node*)malloc(sizeof(Observer_Node));
-        if(observer_node == NULL) return -1;
-        observer_node->func = observer.func;
-        observer_node->next = NULL;
+    Observer_Node* observer_node = (Observer_Node*)malloc(sizeof(Observer_Node));
+    if(observer_node == NULL) return -2;
+    observer_node->func = observer->func;
+    observer_node->next = NULL;
 
-        if(func_link_tail == NULL)
-        {
-            printf("Head is null\r\n");
-            func_head_node[observer.topic] = observer_node;
-        } 
-        else
-        {
-            func_link_tail->next = observer_node;
-        } 
-        
+    if(func_link_tail == NULL)
+    {
+        func_head_node[observer->topic] = observer_node;
+    } 
+    else
+    {
+        func_link_tail->next = observer_node;
     }
     return 0;
 }
@@ -119,7 +113,7 @@ int msg_notify(topic_e topic, void* msg)
 
     while(cur_node != NULL)
     {
-        if(cur_node->func == NULL)  return -1;
+        if(cur_node->func == NULL) return -1;
         cur_node->func(msg);
         cur_node = cur_node->next;
     }
@@ -147,18 +141,21 @@ static void observer_cb2(void* msg)
     printf("observer callback2: %d\r\n", *((char*)msg));
 }
 
+
 int main(void)
 {
     observer_t observer = {.func = observer_cb, .topic = ON_OFF_STATE};
-    topic_subscribe(observer);
+    topic_subscribe(&observer);
 
     observer_t observer1 = {.func = observer_cb1, .topic = ON_OFF_STATE};
-    topic_subscribe(observer1);
+    topic_subscribe(&observer1);
 
     observer_t observer2 = {.func = observer_cb2, .topic = ON_OFF_STATE};
-    topic_subscribe(observer2);
+    topic_subscribe(&observer2);
 
     printf("Hello\r\n");
+    turn_on_the_light();
+    turn_on_the_light();
     turn_on_the_light();
     return 0;
 }
